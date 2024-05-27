@@ -3021,7 +3021,7 @@ class CopyPaste(BaseTransform):
         bbox_occluded_thr: int = 10,
         mask_occluded_thr: int = 300,
         selected: bool = True,
-        paste_by_box: bool = False,
+        paste_by_box: bool = True,
     ) -> None:
         self.max_num_pasted = max_num_pasted
         self.bbox_occluded_thr = bbox_occluded_thr

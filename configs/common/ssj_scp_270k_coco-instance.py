@@ -1,7 +1,7 @@
 _base_ = 'ssj_270k_coco-instance.py'
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '../data/kitti/'
 
 image_size = (1024, 1024)
 
@@ -24,7 +24,7 @@ backend_args = None
 # with a resize range of 0.8 to 1.25 of the original image size.
 load_pipeline = [
     dict(type='LoadImageFromFile', backend_args=backend_args),
-    dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
+    dict(type='LoadAnnotations', with_bbox=True, with_mask=False),
     dict(
         type='RandomResize',
         scale=image_size,
