@@ -4,19 +4,31 @@ import os
 import os.path as osp
 import time
 import warnings
+import sys
 
 import mmcv
 import torch
-from mmcv import Config, DictAction
-from mmcv.runner import get_dist_info, init_dist
-from mmcv.utils import get_git_hash
+from mmengine.config import Config, DictAction
+from mmengine.dist import get_dist_info, init_dist
+from mmengine.utils import get_git_hash
 
 from mmdet import __version__
-from mmdet.apis import set_random_seed, train_detector
-from mmdet.datasets import build_dataset
-from mmdet.models import build_detector
+from mmengine.runner import set_random_seed
+
+from mmengine.config import Config, DictAction
+from mmengine.registry import RUNNERS
+from mmengine.runner import Runner
+
+# from mmdet.apis import train_detector
+# mmdetection_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+# sys.path.insert(0, mmdetection_path)
+# from mmdet.apis import train_detector
+
+# from mmdet.datasets import build_dataset
+# from mmdet.models import build_detector
 from mmdet.distillation import build_distiller
-from mmdet.utils import collect_env, get_root_logger
+from mmdet.utils import collect_env # , get_root_logger
+from mmengine.utils.path import mkdir_or_exist
 
 
 def parse_args():
@@ -91,9 +103,9 @@ def main():
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
     # import modules from string list.
-    if cfg.get('custom_imports', None):
-        from mmcv.utils import import_modules_from_strings
-        import_modules_from_strings(**cfg['custom_imports'])
+    # if cfg.get('custom_imports', None):
+    #     from mmcv.utils import import_modules_from_strings
+    #     import_modules_from_strings(**cfg['custom_imports'])
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
@@ -124,13 +136,13 @@ def main():
         cfg.gpu_ids = range(world_size)
 
     # create work_dir
-    mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
+    mkdir_or_exist(osp.abspath(cfg.work_dir))
     # dump config
     cfg.dump(osp.join(cfg.work_dir, osp.basename(args.config)))
     # init the logger before other steps
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-    log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
-    logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
+    # log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
+    # logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
 
     # init the meta dict to record some important information such as
     # environment info and seed, which will be logged
@@ -139,18 +151,18 @@ def main():
     env_info_dict = collect_env()
     env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
     dash_line = '-' * 60 + '\n'
-    logger.info('Environment info:\n' + dash_line + env_info + '\n' +
-                dash_line)
+    # logger.info('Environment info:\n' + dash_line + env_info + '\n' +
+    #             dash_line)
     meta['env_info'] = env_info
     meta['config'] = cfg.pretty_text
     # log some basic info
-    logger.info(f'Distributed training: {distributed}')
-    logger.info(f'Config:\n{cfg.pretty_text}')
+    # logger.info(f'Distributed training: {distributed}')
+    # logger.info(f'Config:\n{cfg.pretty_text}')
 
     # set random seeds
     if args.seed is not None:
-        logger.info(f'Set random seed to {args.seed}, '
-                    f'deterministic: {args.deterministic}')
+        # logger.info(f'Set random seed to {args.seed}, '
+        #             f'deterministic: {args.deterministic}')
         set_random_seed(args.seed, deterministic=args.deterministic)
     cfg.seed = args.seed
     meta['seed'] = args.seed
@@ -159,40 +171,43 @@ def main():
 
     distiller_cfg = cfg.get('distiller',None)
     if distiller_cfg is None:
-        model = build_detector(
-            cfg.model,
-            train_cfg=cfg.get('train_cfg'),
-            test_cfg=cfg.get('test_cfg'))
+        # model = build_detector(
+        #     cfg.model,
+        #     train_cfg=cfg.get('train_cfg'),
+        #     test_cfg=cfg.get('test_cfg'))
+        print(shutdown)
     else:
         teacher_cfg = Config.fromfile(cfg.teacher_cfg)
         student_cfg = Config.fromfile(cfg.student_cfg)
         
         model = build_distiller(cfg.distiller,teacher_cfg,student_cfg,
-         train_cfg=student_cfg.get('train_cfg'), 
-         test_cfg=student_cfg.get('test_cfg'))
+                                train_cfg=student_cfg.get('train_cfg'), 
+                                test_cfg=student_cfg.get('test_cfg'))
 
 
-    datasets = [build_dataset(cfg.data.train)]
-    if len(cfg.workflow) == 2:
-        val_dataset = copy.deepcopy(cfg.data.val)
-        val_dataset.pipeline = cfg.data.train.pipeline
-        datasets.append(build_dataset(val_dataset))
-    if cfg.checkpoint_config is not None:
-        # save mmdet version, config file content and class names in
-        # checkpoints as meta data
-        cfg.checkpoint_config.meta = dict(
-            mmdet_version=__version__ + get_git_hash()[:7],
-            CLASSES=datasets[0].CLASSES)
+    # datasets = [build_dataset(cfg.data.train)]
+    # if len(cfg.workflow) == 2:
+    #     val_dataset = copy.deepcopy(cfg.data.val)
+    #     val_dataset.pipeline = cfg.data.train.pipeline
+    #     datasets.append(build_dataset(val_dataset))
+    # if cfg.checkpoint_config is not None:
+    #     # save mmdet version, config file content and class names in
+    #     # checkpoints as meta data
+    #     cfg.checkpoint_config.meta = dict(
+    #         mmdet_version=__version__ + get_git_hash()[:7],
+    #         CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
-    model.CLASSES = datasets[0].CLASSES
-    train_detector(
-        model,
-        datasets,
-        cfg,
-        distributed=distributed,
-        validate=(not args.no_validate),
-        timestamp=timestamp,
-        meta=meta)
+    # model.CLASSES = datasets[0].CLASSES
+    runner = Runner.build(cfg)
+    # train_detector(
+    #     model,
+    #     datasets,
+    #     cfg,
+    #     distributed=distributed,
+    #     validate=(not args.no_validate),
+    #     timestamp=timestamp,
+    #     meta=meta)
+    runner.train()
 
 
 if __name__ == '__main__':

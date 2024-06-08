@@ -424,7 +424,7 @@ param_scheduler = [
         ],
         type='MultiStepLR'),
 ]
-resume = True
+resume = False
 test_cfg = dict(_scope_='mmdet', type='TestLoop')
 test_dataloader = dict(
     batch_size=1,
