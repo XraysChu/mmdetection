@@ -76,6 +76,50 @@ class DetectionDistiller(BaseDetector):
     def base_parameters(self):
         return nn.ModuleList([self.student,self.distill_losses])
 
+    def _forward(self, img, img_metas, **kwargs):
+        """Forward function for inference.
+
+        Args:
+            img (Tensor): Input images of shape (N, C, H, W).
+                Typically these should be mean centered and std scaled.
+            img_metas (list[dict]): A List of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                :class:`mmdet.datasets.pipelines.Collect`.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of output tensors.
+        """
+        raise NotImplementedError
+
+    def loss(self, **kwargs):
+        """Compute losses.
+
+        Args:
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of loss components.
+        """
+        raise NotImplementedError
+
+    def predict(self, img, img_metas, **kwargs):
+        """Predict function for inference.
+
+        Args:
+            img (Tensor): Input images of shape (N, C, H, W).
+                Typically these should be mean centered and std scaled.
+            img_metas (list[dict]): A List of image info dict where each dict
+                has: 'img_shape', 'scale_factor', 'flip', and may also contain
+                'filename', 'ori_shape', 'pad_shape', and 'img_norm_cfg'.
+                For details on the values of these keys see
+                :class:`mmdet.datasets.pipelines.Collect`.
+
+        Returns:
+            dict[str, Tensor]: A dictionary of output tensors.
+        """
+        raise NotImplementedError
 
     @property
     def with_neck(self):
